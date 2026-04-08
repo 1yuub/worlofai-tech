@@ -9,6 +9,7 @@ const App = (() => {
   let searchQuery = '';
   let featuredArticle = null;
   let observer = null;
+  let _loadGeneration = 0; // increments on each new category/search load
 
   const CATEGORIES = [
     { id: 'general', label: 'Home', icon: '🏠' },
@@ -17,6 +18,7 @@ const App = (() => {
     { id: 'crypto', label: 'Crypto', icon: '₿' },
     { id: 'dev', label: 'Dev', icon: '⚡' },
     { id: 'market', label: 'Markets', icon: '📈' },
+    { id: 'hn', label: 'Hacker News', icon: '🔶' },
   ];
 
   const BREAKING_NEWS = [
@@ -237,8 +239,11 @@ const App = (() => {
   }
 
   async function loadArticles(reset = false) {
-    if (isLoading) return;
+    if (isLoading && !reset) return;
+    if (reset) isLoading = false; // allow a new load to start
+
     isLoading = true;
+    const myGen = ++_loadGeneration; // unique token for this load
 
     const grid = document.getElementById('articlesGrid');
     const spinner = document.getElementById('loadingSpinner');
@@ -252,59 +257,94 @@ const App = (() => {
       articleStore.clear();
     }
 
+    const isFirstPage = reset;
+
     showSkeletons(6);
     if (spinner) spinner.style.display = 'flex';
 
-    try {
-      let articles;
-      if (searchQuery) {
-        articles = await API.searchArticles(searchQuery, currentPage);
-      } else {
-        articles = await API.fetchArticles(currentCategory, currentPage, CONFIG.PAGE_SIZE);
-      }
+    const seen = new Set();
+    let totalRendered = 0;
+    let firstBatch = true;
 
+    function renderBatch(articles) {
+      // Discard results from a superseded load (user changed category)
+      if (myGen !== _loadGeneration) return;
+
+      const newArts = articles.filter(a => {
+        if (!a || !a.title || seen.has(a.title)) return false;
+        seen.add(a.title);
+        return true;
+      });
+      if (newArts.length === 0) return;
+
+      // Remove skeletons once we have real content
       removeSkeletons();
       if (spinner) spinner.style.display = 'none';
 
-      if (!articles || articles.length === 0) {
-        hasMore = false;
-        if (currentPage === 1) {
-          grid.innerHTML = `<div class="empty-state"><span class="empty-icon">📰</span><p>No articles found. Try a different category.</p></div>`;
-        }
-        isLoading = false;
-        return;
-      }
-
-      // First load: set featured article
-      if (currentPage === 1 && reset && articles.length > 0) {
-        featuredArticle = articles[0];
+      if (firstBatch && isFirstPage) {
+        firstBatch = false;
+        featuredArticle = newArts[0];
         storeArticle(featuredArticle);
         const hero = document.getElementById('heroSection');
         if (hero) {
           hero.innerHTML = createArticleCard(featuredArticle, true);
           hero.style.display = 'block';
         }
-        articles = articles.slice(1);
+        newArts.slice(1).forEach((article, i) => {
+          storeArticle(article);
+          grid.insertAdjacentHTML('beforeend', createArticleCard(article));
+          if ((totalRendered + i + 1) % 6 === 0) {
+            grid.insertAdjacentHTML('beforeend', createAdSlot('infeed'));
+          }
+        });
+        totalRendered += newArts.length;
+      } else {
+        newArts.forEach((article, i) => {
+          storeArticle(article);
+          grid.insertAdjacentHTML('beforeend', createArticleCard(article));
+          if ((totalRendered + i) % 6 === 0 && totalRendered > 0) {
+            grid.insertAdjacentHTML('beforeend', createAdSlot('infeed'));
+          }
+        });
+        totalRendered += newArts.length;
       }
+    }
 
-      articles.forEach((article, i) => {
-        storeArticle(article);
-        grid.insertAdjacentHTML('beforeend', createArticleCard(article));
-        // Insert ad slot after every 6 articles
-        if ((i + 1) % 6 === 0) {
-          grid.insertAdjacentHTML('beforeend', createAdSlot('infeed'));
-        }
-      });
-
-      hasMore = articles.length >= CONFIG.PAGE_SIZE - 1;
-      currentPage++;
-
+    try {
+      if (searchQuery) {
+        // Search: all providers in parallel, render result together
+        const articles = await API.searchArticles(searchQuery, currentPage);
+        renderBatch(articles || []);
+      } else {
+        // Progressive rendering: render as each provider returns
+        const providers = API.getProviders(currentCategory, currentPage, CONFIG.PAGE_SIZE);
+        await Promise.allSettled(
+          providers.map(async (providerFn) => {
+            try {
+              const articles = await providerFn();
+              if (articles && articles.length > 0) renderBatch(articles);
+            } catch (e) {
+              console.warn('Provider error:', e.message);
+            }
+          })
+        );
+      }
     } catch (err) {
-      removeSkeletons();
-      if (spinner) spinner.style.display = 'none';
       console.error('Load error:', err);
     }
 
+    // Still our load? Finalize.
+    if (myGen !== _loadGeneration) return;
+
+    removeSkeletons();
+    if (spinner) spinner.style.display = 'none';
+
+    if (totalRendered === 0 && currentPage === 1) {
+      renderBatch(API.getMockArticles(API.mockFallbackCat(currentCategory), CONFIG.PAGE_SIZE, 1));
+    }
+
+    hasMore = totalRendered >= CONFIG.PAGE_SIZE - 1;
+    currentPage++;
     isLoading = false;
   }
 
@@ -581,6 +621,11 @@ const App = (() => {
   }
 
   // ─── Init ─────────────────────────────────────────────────────────────────
+  function _debounce(fn, delay) {
+    let tid;
+    return (...args) => { clearTimeout(tid); tid = setTimeout(() => fn(...args), delay); };
+  }
+
   function init() {
     initTheme();
     initRouting();
@@ -616,12 +661,17 @@ const App = (() => {
       });
     }
 
-    // Search on Enter key
+    // Search on Enter key + debounced live search
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
       searchInput.addEventListener('keydown', e => {
         if (e.key === 'Enter') performSearch();
       });
+      // Debounce: auto-search after 400 ms of inactivity (min 3 chars)
+      const debouncedSearch = _debounce(() => {
+        if (searchInput.value.trim().length >= 3) performSearch();
+      }, 400);
+      searchInput.addEventListener('input', debouncedSearch);
     }
 
     // Close modals on backdrop click

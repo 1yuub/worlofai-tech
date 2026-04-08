@@ -1,30 +1,30 @@
 // WorldOfAI Tech - API Integration Module
+// Uses Cache.fetchWithCache() for TTL caching, stale-while-revalidate, timeout & retry.
 
 const API = (() => {
-  const cache = new Map();
 
-  function getCached(key) {
-    const entry = cache.get(key);
-    if (entry && Date.now() - entry.ts < CONFIG.CACHE_TTL) return entry.data;
-    return null;
-  }
-
-  function setCache(key, data) {
-    cache.set(key, { data, ts: Date.now() });
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+  // Strip HTML tags using DOM when available, or a whitelist-based regex fallback.
+  // Using DOM textContent is the most reliable approach and avoids regex bypass issues.
+  function _stripHtml(html) {
+    if (typeof document !== 'undefined') {
+      const el = document.createElement('div');
+      el.innerHTML = html;
+      return el.textContent || el.innerText || '';
+    }
+    // Fallback: replace all tags (including those with nested < characters)
+    return html.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/gi, ' ');
   }
 
   // ─── Dev.to ───────────────────────────────────────────────────────────────
   async function fetchDevTo(tag = 'webdev', page = 1, perPage = 12) {
     const key = `devto_${tag}_${page}_${perPage}`;
-    const cached = getCached(key);
-    if (cached) return cached;
-
-    try {
+    return Cache.fetchWithCache(key, async (signal) => {
       const url = `https://dev.to/api/articles?tag=${encodeURIComponent(tag)}&page=${page}&per_page=${perPage}`;
-      const res = await fetch(url);
+      const res = await fetch(url, { signal });
       if (!res.ok) throw new Error(`Dev.to ${res.status}`);
       const data = await res.json();
-      const articles = data.map(a => ({
+      return data.map(a => ({
         id: `devto_${a.id}`,
         title: a.title,
         description: a.description || a.tag_list?.join(', ') || '',
@@ -38,28 +38,19 @@ const API = (() => {
         category: tag,
         tags: a.tag_list || [],
       }));
-      setCache(key, articles);
-      return articles;
-    } catch (e) {
-      console.warn('Dev.to fetch failed:', e.message);
-      return [];
-    }
+    }).catch(e => { console.warn('Dev.to fetch failed:', e.message); return []; });
   }
 
   // ─── CryptoPanic ─────────────────────────────────────────────────────────
   async function fetchCryptoPanic(filter = 'trending', page = 1) {
-    const key = `cryptopanic_${filter}_${page}`;
-    const cached = getCached(key);
-    if (cached) return cached;
-
     if (!CONFIG.CRYPTOPANIC_KEY) return [];
-
-    try {
+    const key = `cryptopanic_${filter}_${page}`;
+    return Cache.fetchWithCache(key, async (signal) => {
       const url = `https://cryptopanic.com/api/v1/posts/?auth_token=${CONFIG.CRYPTOPANIC_KEY}&filter=${filter}&page=${page}&public=true`;
-      const res = await fetch(url);
+      const res = await fetch(url, { signal });
       if (!res.ok) throw new Error(`CryptoPanic ${res.status}`);
       const data = await res.json();
-      const articles = (data.results || []).map(a => ({
+      return (data.results || []).map(a => ({
         id: `cp_${a.id}`,
         title: a.title,
         description: a.metadata?.description || 'Crypto news update.',
@@ -73,26 +64,18 @@ const API = (() => {
         category: 'crypto',
         tags: ['crypto', 'blockchain'],
       }));
-      setCache(key, articles);
-      return articles;
-    } catch (e) {
-      console.warn('CryptoPanic fetch failed:', e.message);
-      return [];
-    }
+    }).catch(e => { console.warn('CryptoPanic fetch failed:', e.message); return []; });
   }
 
   // ─── CoinGecko ────────────────────────────────────────────────────────────
   async function fetchCoinGeckoNews(page = 1) {
     const key = `coingecko_${page}`;
-    const cached = getCached(key);
-    if (cached) return cached;
-
-    try {
+    return Cache.fetchWithCache(key, async (signal) => {
       const headers = CONFIG.COINGECKO_KEY ? { 'x-cg-demo-api-key': CONFIG.COINGECKO_KEY } : {};
-      const res = await fetch(`https://api.coingecko.com/api/v3/news?page=${page}`, { headers });
+      const res = await fetch(`https://api.coingecko.com/api/v3/news?page=${page}`, { signal, headers });
       if (!res.ok) throw new Error(`CoinGecko ${res.status}`);
       const data = await res.json();
-      const articles = (data.data || []).map(a => ({
+      return (data.data || []).map(a => ({
         id: `cg_${a.id || Math.random()}`,
         title: a.title,
         description: a.description || 'Latest crypto market news.',
@@ -106,29 +89,20 @@ const API = (() => {
         category: 'crypto',
         tags: ['crypto', 'market'],
       }));
-      setCache(key, articles);
-      return articles;
-    } catch (e) {
-      console.warn('CoinGecko fetch failed:', e.message);
-      return [];
-    }
+    }).catch(e => { console.warn('CoinGecko fetch failed:', e.message); return []; });
   }
 
   // ─── NewsAPI ──────────────────────────────────────────────────────────────
   async function fetchNewsAPI(query = 'technology', category = 'technology', page = 1, pageSize = 12) {
-    const key = `newsapi_${query}_${category}_${page}`;
-    const cached = getCached(key);
-    if (cached) return cached;
-
     if (!CONFIG.NEWSAPI_KEY) return [];
-
-    try {
+    const key = `newsapi_${query}_${category}_${page}`;
+    return Cache.fetchWithCache(key, async (signal) => {
       const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&language=en&sortBy=publishedAt&page=${page}&pageSize=${pageSize}&apiKey=${CONFIG.NEWSAPI_KEY}`;
-      const res = await fetch(url);
+      const res = await fetch(url, { signal });
       if (!res.ok) throw new Error(`NewsAPI ${res.status}`);
       const data = await res.json();
       if (data.status !== 'ok') throw new Error(data.message);
-      const articles = (data.articles || []).map((a, i) => ({
+      return (data.articles || []).map((a, i) => ({
         id: `newsapi_${page}_${i}`,
         title: a.title,
         description: a.description || a.content?.slice(0, 150) || '',
@@ -142,12 +116,42 @@ const API = (() => {
         category: category,
         tags: [category],
       }));
-      setCache(key, articles);
-      return articles;
-    } catch (e) {
-      console.warn('NewsAPI fetch failed:', e.message);
-      return [];
-    }
+    }).catch(e => { console.warn('NewsAPI fetch failed:', e.message); return []; });
+  }
+
+  // ─── Hacker News (Algolia) ────────────────────────────────────────────────
+  // No API key required. Fast, CORS-enabled, free.
+  async function fetchHackerNews(query = '', page = 1, perPage = 12) {
+    const key = `hn_${query}_${page}_${perPage}`;
+    return Cache.fetchWithCache(key, async (signal) => {
+      const p = page - 1; // Algolia is 0-indexed
+      const endpoint = query
+        ? `https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(query)}&tags=story&hitsPerPage=${perPage}&page=${p}`
+        : `https://hn.algolia.com/api/v1/search_by_date?tags=story&hitsPerPage=${perPage}&page=${p}`;
+      const res = await fetch(endpoint, { signal });
+      if (!res.ok) throw new Error(`HN Algolia ${res.status}`);
+      const data = await res.json();
+      return (data.hits || [])
+        .filter(h => h.title && (h.url || h.objectID))
+        .map(h => ({
+          id: `hn_${h.objectID}`,
+          title: h.title,
+          description: h.story_text
+            ? _stripHtml(h.story_text).slice(0, 200)
+            : `${h.points || 0} points · ${h.num_comments || 0} comments on Hacker News`,
+          url: h.url || `https://news.ycombinator.com/item?id=${h.objectID}`,
+          image: `https://picsum.photos/seed/hn${h.objectID}/800/450`,
+          source: 'Hacker News',
+          sourceColor: '#ff6600',
+          author: h.author || 'HN',
+          publishedAt: h.created_at,
+          readTime: `${Math.max(2, Math.ceil((h.num_comments || 5) / 15))} min read`,
+          category: 'tech',
+          tags: ['hackernews', ...(query ? [query.split(' ')[0].toLowerCase()] : ['tech'])],
+          hnPoints: h.points || 0,
+        }));
+    }, { timeout: 6000, retries: 1 })
+    .catch(e => { console.warn('HN Algolia fetch failed:', e.message); return []; });
   }
 
   // ─── Mock Data ────────────────────────────────────────────────────────────
@@ -260,102 +264,99 @@ const API = (() => {
     return map[cat] || '#6366f1';
   }
 
-  // ─── Main Aggregator ──────────────────────────────────────────────────────
-  async function fetchArticles(category = 'general', page = 1, pageSize = CONFIG.PAGE_SIZE) {
-    const key = `articles_${category}_${page}_${pageSize}`;
-    const cached = getCached(key);
-    if (cached) return cached;
+  // ─── Provider registry (for progressive rendering) ────────────────────────
+  // Returns an array of zero-argument async functions, one per source.
+  // app.js calls them concurrently and renders each batch as it resolves.
+  function getProviders(category, page, pageSize) {
+    const half  = Math.ceil(pageSize / 2);
+    const third = Math.ceil(pageSize / 3);
+    const providers = [];
 
-    let articles = [];
-
-    try {
-      if (category === 'ai' || category === 'general') {
-        const [devtoAi, newsApiAi] = await Promise.allSettled([
-          fetchDevTo('ai', page, Math.ceil(pageSize / 2)),
-          fetchNewsAPI('artificial intelligence OR machine learning', 'ai', page, Math.ceil(pageSize / 2)),
-        ]);
-        if (devtoAi.status === 'fulfilled') articles.push(...devtoAi.value);
-        if (newsApiAi.status === 'fulfilled') articles.push(...newsApiAi.value);
-      }
-
-      if (category === 'tech' || category === 'general') {
-        const [devtoWeb, newsApiTech] = await Promise.allSettled([
-          fetchDevTo('webdev', page, Math.ceil(pageSize / 2)),
-          fetchNewsAPI('technology OR software', 'tech', page, Math.ceil(pageSize / 2)),
-        ]);
-        if (devtoWeb.status === 'fulfilled') articles.push(...devtoWeb.value);
-        if (newsApiTech.status === 'fulfilled') articles.push(...newsApiTech.value);
-      }
-
-      if (category === 'crypto' || category === 'general') {
-        const [cp, cg] = await Promise.allSettled([
-          fetchCryptoPanic('trending', page),
-          fetchCoinGeckoNews(page),
-        ]);
-        if (cp.status === 'fulfilled') articles.push(...cp.value);
-        if (cg.status === 'fulfilled') articles.push(...cg.value);
-      }
-
-      if (category === 'dev') {
-        const [prog, js] = await Promise.allSettled([
-          fetchDevTo('programming', page, Math.ceil(pageSize / 2)),
-          fetchDevTo('javascript', page, Math.ceil(pageSize / 2)),
-        ]);
-        if (prog.status === 'fulfilled') articles.push(...prog.value);
-        if (js.status === 'fulfilled') articles.push(...js.value);
-      }
-
-      if (category === 'market') {
-        const [cg, news] = await Promise.allSettled([
-          fetchCoinGeckoNews(page),
-          fetchNewsAPI('stock market OR investing OR finance', 'market', page, pageSize),
-        ]);
-        if (cg.status === 'fulfilled') articles.push(...cg.value);
-        if (news.status === 'fulfilled') articles.push(...news.value);
-      }
-    } catch (e) {
-      console.warn('fetchArticles error:', e);
+    // Hacker News — dedicated category
+    if (category === 'hn') {
+      providers.push(() => fetchHackerNews('', page, pageSize));
+      return providers;
     }
 
-    // Deduplicate
+    if (category === 'ai' || category === 'general') {
+      providers.push(() => fetchHackerNews('machine learning OR LLM OR GPT OR artificial intelligence', page, half));
+      providers.push(() => fetchDevTo('ai', page, third));
+      providers.push(() => fetchNewsAPI('artificial intelligence OR machine learning', 'ai', page, third));
+    }
+
+    if (category === 'tech' || category === 'general') {
+      providers.push(() => fetchHackerNews('tech OR software OR startup', page, half));
+      providers.push(() => fetchDevTo('webdev', page, third));
+      providers.push(() => fetchNewsAPI('technology OR software', 'tech', page, third));
+    }
+
+    if (category === 'crypto' || category === 'general') {
+      providers.push(() => fetchCryptoPanic('trending', page));
+      providers.push(() => fetchCoinGeckoNews(page));
+      if (category === 'crypto') {
+        providers.push(() => fetchHackerNews('bitcoin OR ethereum OR crypto OR blockchain', page, half));
+      }
+    }
+
+    if (category === 'dev') {
+      providers.push(() => fetchHackerNews('show hn OR ask hn OR programming OR javascript OR typescript OR open source', page, half));
+      providers.push(() => fetchDevTo('programming', page, half));
+      providers.push(() => fetchDevTo('javascript', page, half));
+    }
+
+    if (category === 'market') {
+      providers.push(() => fetchCoinGeckoNews(page));
+      providers.push(() => fetchNewsAPI('stock market OR investing OR finance', 'market', page, half));
+      providers.push(() => fetchHackerNews('stocks OR investing OR IPO OR fintech OR finance', page, half));
+    }
+
+    return providers;
+  }
+
+  function _mockFallbackCat(category) {
+    return (category in MOCK) ? category : 'tech';
+  }
+  async function fetchArticles(category = 'general', page = 1, pageSize = CONFIG.PAGE_SIZE) {
+    const providers = getProviders(category, page, pageSize);
+    const results = await Promise.allSettled(providers.map(fn => fn()));
+    let articles = results
+      .filter(r => r.status === 'fulfilled')
+      .flatMap(r => r.value || []);
+
+    // Deduplicate by title
     const seen = new Set();
     articles = articles.filter(a => {
-      if (seen.has(a.title)) return false;
+      if (!a || !a.title || seen.has(a.title)) return false;
       seen.add(a.title);
       return true;
     });
 
-    // If no live data, use mock
+    // Fall back to mock data when no live results
     if (articles.length < 4) {
-      const mockCat = category === 'general' ? 'tech' : category;
-      articles = getMockArticles(mockCat in MOCK ? mockCat : 'tech', pageSize, page);
+      articles = getMockArticles(_mockFallbackCat(category), pageSize, page);
     } else {
       articles = articles.slice(0, pageSize);
     }
 
-    setCache(key, articles);
     return articles;
   }
 
   // ─── Search ───────────────────────────────────────────────────────────────
   async function searchArticles(query, page = 1) {
-    const key = `search_${query}_${page}`;
-    const cached = getCached(key);
-    if (cached) return cached;
-
     const q = query.toLowerCase();
     let results = [];
 
-    const [devto, newsapi] = await Promise.allSettled([
-      fetchDevTo(q.replace(/\s+/g, '-'), page, 12),
-      fetchNewsAPI(query, 'general', page, 12),
+    const [hn, devto, newsapi] = await Promise.allSettled([
+      fetchHackerNews(query, page, 12),
+      fetchDevTo(q.replace(/\s+/g, '-'), page, 10),
+      fetchNewsAPI(query, 'general', page, 10),
     ]);
 
-    if (devto.status === 'fulfilled') results.push(...devto.value);
+    if (hn.status     === 'fulfilled') results.push(...hn.value);
+    if (devto.status  === 'fulfilled') results.push(...devto.value);
     if (newsapi.status === 'fulfilled') results.push(...newsapi.value);
 
     if (results.length < 4) {
-      // Filter mock data across all categories
       const allMock = Object.entries(MOCK).flatMap(([cat, items]) =>
         items
           .filter(a => a.title.toLowerCase().includes(q) || a.desc.toLowerCase().includes(q) || a.tags.some(t => t.includes(q)))
@@ -378,9 +379,19 @@ const API = (() => {
       results = allMock.length > 0 ? allMock : getMockArticles('tech', 12, 1);
     }
 
-    setCache(key, results);
     return results;
   }
 
-  return { fetchDevTo, fetchCryptoPanic, fetchCoinGeckoNews, fetchNewsAPI, getMockArticles, fetchArticles, searchArticles };
+  return {
+    fetchDevTo,
+    fetchCryptoPanic,
+    fetchCoinGeckoNews,
+    fetchNewsAPI,
+    fetchHackerNews,
+    getMockArticles,
+    mockFallbackCat: _mockFallbackCat,
+    getProviders,
+    fetchArticles,
+    searchArticles,
+  };
 })();
