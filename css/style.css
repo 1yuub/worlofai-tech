@@ -683,18 +683,23 @@ footer{
    Optimized for Android & iOS devices (320px – 768px)
    ═══════════════════════════════════════════════════════ */
 
-/* ─── Touch Target Improvements (All Screens) ────────────
+/* ─── Touch Targets for touch/pointer devices ────────────
+   Applied via hover:none + pointer:coarse to target actual
+   touch screens without bloating desktop button sizes.
    iOS HIG: ≥ 44×44 px  |  Material Design: ≥ 48×48 dp  */
-.btn-action{width:44px;height:44px;border-radius:8px;font-size:1rem}
-.btn-icon{width:44px;height:44px}
-.modal-close{width:44px;height:44px}
-.btn-remove-saved{
-  min-width:44px;min-height:44px;
-  display:flex;align-items:center;justify-content:center;
+@media(hover:none) and (pointer:coarse){
+  .btn-action{width:44px;height:44px;border-radius:8px;font-size:1rem}
+  .btn-icon{width:44px;height:44px}
+  .modal-close{width:44px;height:44px}
+  .btn-remove-saved{
+    min-width:44px;min-height:44px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .btn-primary,.btn-secondary{min-height:44px}
 }
+/* Structural min-heights for nav/tabs apply on all touch-size screens */
 .cat-tab{min-height:44px}
 .mobile-nav-link{min-height:48px;display:flex;align-items:center}
-.btn-primary,.btn-secondary{min-height:44px}
 
 /* ─── Tablets & Large Phones: 481px – 768px ─────────── */
 @media(max-width:768px){
@@ -733,7 +738,8 @@ footer{
   .nav-inner{gap:.5rem}
   .logo-text{font-size:1rem}
   .nav-actions{gap:.2rem}
-  .btn-icon{width:40px;height:40px;font-size:1rem}
+  /* Keep min-height 44px; reduce visual size slightly via padding trick */
+  .btn-icon{width:44px;height:44px;font-size:1rem}
 
   /* Mobile nav drawer */
   #mobileNav{padding:.75rem}
@@ -806,10 +812,10 @@ footer{
 }
 
 /* ─── Image responsive guarantees ───────────────────────
-   Ensure no image ever causes horizontal scrolling       */
-img{max-width:100%;height:auto}
-.card-image{height:100%}
-.modal-article-image{height:auto;max-height:280px}
+   Ensure no image ever causes horizontal scrolling.
+   Note: .card-image uses height:100% + object-fit:cover
+   intentionally within its aspect-ratio container.        */
+.modal-article-image{max-height:280px;object-fit:cover}
 @media(max-width:480px){
   .modal-article-image{max-height:200px}
 }
