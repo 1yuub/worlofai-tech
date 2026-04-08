@@ -320,6 +320,10 @@ h3{font-size:clamp(1rem,2.5vw,1.2rem)}
   cursor:pointer;
   transition:transform var(--transition),box-shadow var(--transition);
   display:flex;flex-direction:column;
+  /* Reduce layout recalculation on long lists */
+  contain:layout style;
+  content-visibility:auto;
+  contain-intrinsic-size:0 320px;
 }
 .article-card:hover{
   transform:translateY(-4px);
