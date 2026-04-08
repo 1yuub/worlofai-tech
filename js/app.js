@@ -179,7 +179,7 @@ const App = (() => {
               <button class="btn-action btn-save ${saved ? 'saved' : ''}" onclick="event.stopPropagation();App.toggleSave('${article.id}')" title="${saved ? 'Unsave' : 'Save'}">
                 ${saved ? '🔖' : '🔖'}
               </button>
-              <button class="btn-action btn-share" onclick="event.stopPropagation();App.share('${escapeHtml(article.url)}','${escapeHtml(article.title).replace(/'/g,"\\'")}');" title="Share">
+              <button class="btn-action btn-share" onclick="event.stopPropagation();App.shareById('${article.id}')" title="Share">
                 📤
               </button>
             </div>
@@ -337,7 +337,7 @@ const App = (() => {
             <button class="btn-secondary btn-save-modal ${saved ? 'saved' : ''}" onclick="App.toggleSave('${id}');this.classList.toggle('saved');this.textContent=App.isArticleSaved('${id}')?'🔖 Saved':'🔖 Save'">
               ${saved ? '🔖 Saved' : '🔖 Save'}
             </button>
-            <button class="btn-secondary" onclick="App.share('${escapeHtml(article.url)}','${escapeHtml(article.title).replace(/'/g,"\\'")}')">
+            <button class="btn-secondary" onclick="App.shareById('${id}')">
               📤 Share
             </button>
           </div>
@@ -477,6 +477,12 @@ const App = (() => {
     } catch {
       showToast('Could not copy link.');
     }
+  }
+
+  async function shareById(id) {
+    const article = getArticle(id);
+    if (!article) return;
+    await share(article.url, article.title);
   }
 
   function toggleSave(id) {
@@ -622,6 +628,7 @@ const App = (() => {
     toggleSave,
     isArticleSaved,
     share,
+    shareById,
     openSavedPanel,
     closeSavedPanel,
   };
