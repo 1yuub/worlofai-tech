@@ -119,13 +119,17 @@ const App = (() => {
     const el = document.getElementById('trendingList');
     if (!el) return;
     el.innerHTML = TRENDING_TOPICS.map((t, i) => `
-      <div class="trending-item" onclick="App.searchByTag('${escapeHtml(t.tag)}')">
+      <div class="trending-item" data-tag="${escapeHtml(t.tag)}">
         <span class="trending-rank">${i + 1}</span>
         <div class="trending-info">
           <span class="trending-tag">#${escapeHtml(t.tag.replace(/ /g, ''))}</span>
           <span class="trending-count">${t.count} posts</span>
         </div>
       </div>`).join('');
+    el.addEventListener('click', e => {
+      const item = e.target.closest('.trending-item[data-tag]');
+      if (item) searchByTag(item.dataset.tag);
+    });
   }
 
   // ─── Article Cards ────────────────────────────────────────────────────────
@@ -515,16 +519,28 @@ const App = (() => {
     list.innerHTML = saved.length === 0
       ? '<p class="empty-saved">No saved articles yet. Click 🔖 on any article to save it.</p>'
       : saved.map(a => `
-          <div class="saved-item" onclick="App.openArticle('${a.id}')">
+          <div class="saved-item" data-id="${escapeHtml(a.id)}">
             <img class="saved-thumb" src="${a.image}" alt="">
             <div class="saved-info">
               <p class="saved-title">${escapeHtml(a.title)}</p>
-              <span class="saved-source" style="color:${a.sourceColor}">${escapeHtml(a.source)}</span>
+              <span class="saved-source" style="color:${escapeHtml(a.sourceColor)}">${escapeHtml(a.source)}</span>
             </div>
-            <button class="btn-remove-saved" onclick="event.stopPropagation();App.toggleSave('${a.id}');App.openSavedPanel()">✕</button>
+            <button class="btn-remove-saved" data-remove="${escapeHtml(a.id)}">✕</button>
           </div>`).join('');
 
     saved.forEach(a => storeArticle(a));
+
+    list.addEventListener('click', e => {
+      const removeBtn = e.target.closest('.btn-remove-saved[data-remove]');
+      if (removeBtn) {
+        e.stopPropagation();
+        toggleSave(removeBtn.dataset.remove);
+        openSavedPanel();
+        return;
+      }
+      const item = e.target.closest('.saved-item[data-id]');
+      if (item) openArticle(item.dataset.id);
+    }, { once: true });
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
   }
