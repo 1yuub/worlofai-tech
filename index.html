@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WorldOfAI Tech — AI, Tech & Crypto News Aggregator</title>
+  <meta name="description" content="Stay ahead with WorldOfAI Tech — your premier source for artificial intelligence, technology, cryptocurrency, and developer news aggregated from top sources worldwide.">
+  <meta name="keywords" content="AI news, artificial intelligence, tech news, crypto news, blockchain, developer news, machine learning, GPT, Bitcoin, Ethereum">
+  <meta name="author" content="WorldOfAI Tech">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://1yuub.github.io/worlofai-tech/">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://1yuub.github.io/worlofai-tech/">
+  <meta property="og:title" content="WorldOfAI Tech — AI, Tech & Crypto News">
+  <meta property="og:description" content="Stay ahead with WorldOfAI Tech — your premier source for AI, technology, crypto, and developer news aggregated from top sources.">
+  <meta property="og:image" content="https://1yuub.github.io/worlofai-tech/public/og-image.png">
+  <meta property="og:site_name" content="WorldOfAI Tech">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@worlofaitech">
+  <meta name="twitter:title" content="WorldOfAI Tech — AI, Tech & Crypto News">
+  <meta name="twitter:description" content="Stay ahead with WorldOfAI Tech — your premier source for AI, technology, crypto, and developer news.">
+  <meta name="twitter:image" content="https://1yuub.github.io/worlofai-tech/public/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌐</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!--
+  ═══════════════════════════════════════════════════════
+  GOOGLE ADSENSE SETUP INSTRUCTIONS
+  ═══════════════════════════════════════════════════════
+  1. Sign up at https://adsense.google.com
+  2. Add your site: 1yuub.github.io
+  3. After approval, uncomment and replace ca-pub-XXXXXXXXXXXXXXXX
+     with your actual publisher ID in the script below.
+  4. Also update CONFIG.ADSENSE_PUBLISHER_ID in js/config.js
+  5. Replace the .ad-slot divs below with your actual ad unit codes
+  See ADSENSE_GUIDE.md for detailed instructions.
+  ═══════════════════════════════════════════════════════
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+  -->
+
+  <style>
+    /* Critical CSS - prevents layout flash */
+    body{opacity:0;transition:opacity .2s ease}
+    body.loaded{opacity:1}
+  </style>
+</head>
+<body>
+
+  <!-- ═══ NAVIGATION ═══════════════════════════════════ -->
+  <nav id="navbar">
+    <div class="nav-inner">
+      <a href="." class="nav-logo">
+        <span class="logo-icon">🌐</span>
+        <span class="logo-text">WorldOfAI Tech</span>
+      </a>
+
+      <div id="navLinks" class="nav-links"></div>
+
+      <div class="nav-actions">
+        <button class="btn-icon" onclick="App.openSearch()" title="Search (/)">🔍</button>
+        <button class="btn-icon" onclick="App.openSavedPanel()" title="Saved articles" style="position:relative">
+          🔖
+          <span class="saved-count" style="display:none">0</span>
+        </button>
+        <button id="themeToggle" class="btn-icon" onclick="App.toggleTheme()" title="Toggle theme">☀️</button>
+        <button id="menuToggle" class="btn-icon">☰</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile Nav -->
+  <div id="mobileNav">
+    <!-- Populated by JS -->
+  </div>
+
+  <!-- ═══ TOP BANNER AD ════════════════════════════════ -->
+  <!-- ADSENSE: TOP BANNER 728x90 - INSERT YOUR AD CODE HERE -->
+  <div class="container">
+    <div class="ad-slot ad-banner">
+      <!-- Replace this div with your Google AdSense leaderboard ad unit (728x90) -->
+      <span class="ad-label">Advertisement</span>
+    </div>
+  </div>
+
+  <!-- ═══ BREAKING NEWS TICKER ═════════════════════════ -->
+  <div class="ticker-wrap">
+    <div class="container">
+      <div class="ticker-inner">
+        <span class="ticker-badge">⚡ LIVE</span>
+        <div class="ticker-track-wrap">
+          <div id="tickerTrack" class="ticker-track"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ HERO / FEATURED STORY ════════════════════════ -->
+  <div class="container">
+    <div class="hero-section">
+      <div id="heroSection" style="display:none">
+        <!-- Featured article rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN CONTENT ══════════════════════════════════ -->
+  <main>
+    <div class="container">
+      <div class="main-layout">
+
+        <!-- ── Feed Column ────────────────────── -->
+        <div class="feed-column">
+          <div class="feed-header">
+            <h1 id="feedTitle" class="feed-title">🏠 Home News</h1>
+            <div id="categoryTabs"></div>
+          </div>
+
+          <div id="articlesGrid">
+            <!-- Article cards rendered by JS -->
+          </div>
+
+          <div id="loadingSpinner">
+            <div class="spinner"></div>
+          </div>
+
+          <div id="scrollSentinel"></div>
+        </div>
+
+        <!-- ── Sidebar ─────────────────────────── -->
+        <aside class="sidebar">
+          <!-- ADSENSE: SIDEBAR 300x250 - INSERT YOUR AD CODE HERE -->
+          <div class="ad-slot ad-sidebar">
+            <!-- Replace this div with your Google AdSense rectangle ad unit (300x250) -->
+            <span class="ad-label">Advertisement</span>
+          </div>
+
+          <!-- Trending Topics Widget -->
+          <div class="sidebar-widget">
+            <div class="widget-header">🔥 Trending Topics</div>
+            <div class="widget-body">
+              <div id="trendingList"></div>
+            </div>
+          </div>
+
+          <!-- Saved Articles Widget -->
+          <div class="sidebar-widget">
+            <div class="widget-header">🔖 Saved Articles</div>
+            <div class="saved-widget-content">
+              <div class="saved-count saved-widget-count">0</div>
+              <p class="saved-widget-label">articles saved</p>
+              <button class="btn-view-saved" onclick="App.openSavedPanel()">View Saved →</button>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══ MOBILE STICKY AD ══════════════════════════════ -->
+  <!-- ADSENSE: MOBILE STICKY 320x50 - INSERT YOUR AD CODE HERE -->
+  <div class="ad-slot ad-mobile-sticky">
+    <!-- Replace this div with your Google AdSense anchor/sticky ad unit (320x50) -->
+    <span class="ad-label">Advertisement</span>
+  </div>
+
+  <!-- ═══ FOOTER ════════════════════════════════════════ -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="footer-logo">🌐 WorldOfAI Tech</div>
+          <p class="footer-desc">Your premier destination for AI, technology, cryptocurrency, and developer news. Aggregating the best content from top sources worldwide.</p>
+          <div class="footer-socials">
+            <a href="#" class="social-link" title="Twitter/X">𝕏</a>
+            <a href="#" class="social-link" title="GitHub">⌥</a>
+            <a href="#" class="social-link" title="LinkedIn">in</a>
+            <a href="#" class="social-link" title="RSS">◉</a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4>Categories</h4>
+          <div class="footer-links">
+            <a href="#" onclick="event.preventDefault();App.setCategory('tech')">Technology</a>
+            <a href="#" onclick="event.preventDefault();App.setCategory('ai')">Artificial Intelligence</a>
+            <a href="#" onclick="event.preventDefault();App.setCategory('crypto')">Cryptocurrency</a>
+            <a href="#" onclick="event.preventDefault();App.setCategory('dev')">Development</a>
+            <a href="#" onclick="event.preventDefault();App.setCategory('market')">Markets</a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <div class="footer-links">
+            <a href="https://newsapi.org" target="_blank" rel="noopener">NewsAPI</a>
+            <a href="https://dev.to" target="_blank" rel="noopener">Dev.to</a>
+            <a href="https://cryptopanic.com" target="_blank" rel="noopener">CryptoPanic</a>
+            <a href="https://coingecko.com" target="_blank" rel="noopener">CoinGecko</a>
+            <a href="ADSENSE_GUIDE.md" target="_blank">AdSense Guide</a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4>About</h4>
+          <div class="footer-links">
+            <a href="#">About Us</a>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+            <a href="#">Contact</a>
+            <a href="sitemap.xml">Sitemap</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>© 2025 WorldOfAI Tech. All rights reserved.</span>
+        <div class="footer-legal">
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <a href="#">Cookies</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ═══ ARTICLE DETAIL MODAL ═══════════════════════════ -->
+  <div id="articleModal" class="modal-backdrop" onclick="if(event.target===this)App.closeArticleModal()">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">Article</span>
+        <button class="modal-close" onclick="App.closeArticleModal()">✕</button>
+      </div>
+      <div id="articleModalContent">
+        <!-- Content injected by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SEARCH MODAL ══════════════════════════════════ -->
+  <div id="searchModal" class="modal-backdrop" onclick="if(event.target===this)App.closeSearch()">
+    <div class="modal-box search-modal-box">
+      <div class="modal-header">
+        <span class="modal-title">🔍 Search Articles</span>
+        <button class="modal-close" onclick="App.closeSearch()">✕</button>
+      </div>
+      <div class="search-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input
+          id="searchInput"
+          type="search"
+          class="search-input"
+          placeholder="Search for AI, crypto, tech news... (Press Enter)"
+          autocomplete="off"
+        >
+      </div>
+      <div style="padding:.75rem 1.5rem;font-size:.8rem;color:var(--text-muted)">
+        💡 Try: "GPT-5", "Bitcoin ETF", "React 19", "NVIDIA"
+      </div>
+      <div class="search-actions">
+        <button class="btn-secondary" onclick="App.closeSearch()">Cancel</button>
+        <button class="btn-primary" onclick="App.performSearch()">Search →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SAVED ARTICLES MODAL ═══════════════════════════ -->
+  <div id="savedModal" class="modal-backdrop" onclick="if(event.target===this)App.closeSavedPanel()">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">🔖 Saved Articles</span>
+        <button class="modal-close" onclick="App.closeSavedPanel()">✕</button>
+      </div>
+      <div id="savedList" class="saved-list-inner">
+        <!-- Saved articles injected by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TOAST ══════════════════════════════════════════ -->
+  <div id="toast"></div>
+
+  <!-- ═══ BACK TO TOP ════════════════════════════════════ -->
+  <button id="backToTop" title="Back to top">↑</button>
+
+  <!-- ═══ SCRIPTS ════════════════════════════════════════ -->
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // Remove loading flash
+    document.body.classList.add('loaded');
+  </script>
+
+</body>
+</html>
