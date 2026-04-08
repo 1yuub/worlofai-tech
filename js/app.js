@@ -547,11 +547,21 @@ const App = (() => {
 
   function renderNavLinks() {
     const nav = document.getElementById('navLinks');
-    if (!nav) return;
-    nav.innerHTML = CATEGORIES.map(c => `
-      <a class="nav-link ${c.id === currentCategory ? 'active' : ''}" data-cat="${c.id}" href="#" onclick="event.preventDefault();App.setCategory('${c.id}')">
-        ${c.label}
-      </a>`).join('');
+    if (nav) {
+      nav.innerHTML = CATEGORIES.map(c => `
+        <a class="nav-link ${c.id === currentCategory ? 'active' : ''}" data-cat="${c.id}" href="#" onclick="event.preventDefault();App.setCategory('${c.id}')">
+          ${c.label}
+        </a>`).join('');
+    }
+
+    const mobileNav = document.getElementById('mobileNav');
+    if (mobileNav) {
+      mobileNav.innerHTML = CATEGORIES.map(c => `
+        <a class="mobile-nav-link ${c.id === currentCategory ? 'active' : ''}" data-cat="${c.id}" href="#"
+           onclick="event.preventDefault();App.setCategory('${c.id}');document.getElementById('mobileNav').classList.remove('open');document.getElementById('menuToggle').textContent='☰'">
+          ${c.icon} ${c.label}
+        </a>`).join('');
+    }
   }
 
   // ─── Init ─────────────────────────────────────────────────────────────────
