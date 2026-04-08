@@ -1,132 +1,102 @@
-# WorldOfAI.tech — News Aggregation Website
+# WorldOfAI Tech — AI, Tech & Crypto News Aggregator
 
-A professional, full-featured news aggregation website built with **Next.js 16**, **Tailwind CSS**, and multiple news APIs. Aggregates tech, AI, crypto, and developer news into one beautiful, AdSense-ready site.
+[![Deploy to GitHub Pages](https://github.com/1yuub/worlofai-tech/actions/workflows/deploy.yml/badge.svg)](https://github.com/1yuub/worlofai-tech/actions/workflows/deploy.yml)
+
+🌐 **Live at:** [https://1yuub.github.io/worlofai-tech/](https://1yuub.github.io/worlofai-tech/)
+
+A professional, fully-functional news aggregation website that runs **directly on GitHub Pages** — no server, no build step, no localhost required. Built with pure HTML5, CSS3, and JavaScript.
 
 ## ✨ Features
 
-- **Multi-API Integration** — NewsAPI.org, Dev.to, CryptoPanic, CoinGecko
-- **5 Content Categories** — Tech, AI, Crypto, Dev, Market
-- **Dark / Light theme** toggle with system preference detection
-- **Infinite scroll** feed
+- **Multi-API Integration** — Dev.to, CryptoPanic, CoinGecko, NewsAPI.org
+- **5 Content Categories** — Tech, AI, Crypto, Dev, Markets
+- **Works without API keys** — rich mock data fallback included
+- **Dark / Light theme** toggle with `localStorage` persistence
+- **Infinite scroll** news feed with lazy-loaded images
 - **Full-text search** across all sources
-- **AdSense-ready** — placeholder components with clearly marked insertion points
-- **SEO optimised** — Open Graph, Twitter cards, sitemap-ready
-- **Responsive** — mobile-first, works on all devices
-- **Fast** — in-memory API caching (5-min TTL), Next.js ISR
+- **Save articles** to `localStorage` bookmarks
+- **Share articles** via Web Share API + clipboard fallback
+- **Breaking news ticker** with live headlines
+- **AdSense-ready** — strategic placeholder slots with marked insertion points
+- **SEO optimised** — Open Graph, Twitter Cards, sitemap, robots.txt
+- **Responsive** — mobile-first design, works on all devices
+- **Auto-deploys** to GitHub Pages on every push to `main`
 
-## 🚀 Quick Start
+## 🚀 Getting Started (GitHub Pages)
 
-```bash
-# 1. Clone
-git clone https://github.com/1yuub/worlofai-tech
-cd worlofai-tech
+**The site is live immediately after pushing to `main`.** No setup required.
 
-# 2. Install
-npm install
+1. **Fork or clone** this repository
+2. Go to **Settings → Pages** → set source to **GitHub Actions**
+3. Push to `main` — GitHub Actions deploys automatically
+4. Visit: `https://YOUR_USERNAME.github.io/worlofai-tech/`
 
-# 3. Configure environment
-cp .env.example .env.local
-# Edit .env.local and add your API keys
-
-# 4. Run
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
+The site works out-of-the-box with built-in sample articles. Add API keys below for live news data.
 
 ## 🔑 API Keys
 
-| Variable | Source | Notes |
+Add API keys to `js/config.js` to enable live news data:
+
+| Key | Source | Notes |
 |---|---|---|
-| `NEWSAPI_KEY` | [newsapi.org](https://newsapi.org) | Free tier: 100 req/day |
-| `CRYPTOPANIC_KEY` | [cryptopanic.com](https://cryptopanic.com/developers/api/) | Free tier available |
-| `COINGECKO_KEY` | [coingecko.com](https://www.coingecko.com/en/api) | Free tier: 30 req/min |
+| `NEWSAPI_KEY` | [newsapi.org](https://newsapi.org) | Free tier: 100 req/day; register domain for browser use |
+| `CRYPTOPANIC_KEY` | [cryptopanic.com](https://cryptopanic.com/developers/api/) | Optional; improves crypto news |
+| `COINGECKO_KEY` | [coingecko.com](https://www.coingecko.com/en/api) | Optional; free tier: 30 req/min |
 
-All keys are optional — the site falls back to sample data when keys are missing.
+**Dev.to** works without any key (open API, CORS-enabled).  
+All other keys are optional — the site falls back to built-in sample articles.
 
-## 📍 AdSense Integration
+## 💰 AdSense Integration
 
 See **[ADSENSE_GUIDE.md](./ADSENSE_GUIDE.md)** for full setup instructions.
 
 **Quick setup:**
-1. Add `NEXT_PUBLIC_GOOGLE_ADSENSE_ID=ca-pub-YOUR_ID` to `.env.local`
-2. Update slot IDs in `components/ads/AdSenseBlock.tsx`
-3. Uncomment the AdSense `<script>` tag in `app/layout.tsx`
+1. Sign up at [adsense.google.com](https://adsense.google.com) and add your site
+2. After approval, uncomment the AdSense `<script>` tag in `index.html` `<head>`
+3. Replace the `.ad-slot` `<div>` elements with your actual AdSense ad unit codes
 
-**Ad placements:**
+**Pre-placed ad slots:**
+
 | Slot | Format | Location |
 |---|---|---|
-| `top-horizontal` | 728×90 | Above article feed |
-| `middle-horizontal` | 300×250 | Between articles (every 6) |
-| `bottom-horizontal` | 728×90 | Below article feed |
-| `sidebar-vertical` | 300×600 | Right sidebar (desktop) |
+| `ad-banner` | 728×90 | Top of page (leaderboard) |
+| `ad-sidebar` | 300×250 | Right sidebar (sticky, desktop) |
+| `ad-infeed` | 300×250 | Between articles (every 6 articles) |
+| `ad-mobile-sticky` | 320×50 | Mobile sticky bottom |
+
+All slots are marked with `<!-- ADSENSE: ... -->` HTML comments in `index.html` and `js/app.js`.
 
 ## 🗂 Project Structure
 
 ```
 worlofai-tech/
-├── app/
-│   ├── api/
-│   │   ├── news/route.ts       # Aggregated news endpoint
-│   │   └── search/route.ts     # Search endpoint
-│   ├── category/[slug]/page.tsx
-│   ├── search/page.tsx
-│   ├── layout.tsx              # Root layout + AdSense script location
-│   └── page.tsx                # Homepage
-├── components/
-│   ├── ads/
-│   │   └── AdSenseBlock.tsx    # AdSense component with slot mapping
-│   ├── layout/
-│   │   ├── Navbar.tsx
-│   │   └── Footer.tsx
-│   ├── news/
-│   │   ├── ArticleCard.tsx
-│   │   ├── CategoryFilter.tsx
-│   │   └── NewsFeed.tsx        # Infinite scroll feed
-│   └── ui/
-│       ├── SearchBar.tsx
-│       ├── ThemeProvider.tsx
-│       ├── ThemeToggle.tsx
-│       └── TickerBanner.tsx
-├── lib/
-│   ├── cache.ts                # In-memory API cache
-│   ├── newsProviders.ts        # NewsAPI, Dev.to, CryptoPanic, CoinGecko
-│   └── utils.ts
-├── types/
-│   └── index.ts
-├── .env.example
-├── ADSENSE_GUIDE.md
-└── next.config.ts
+├── index.html              # Homepage + all category views
+├── css/
+│   └── style.css           # Dark/light themes, responsive grid
+├── js/
+│   ├── config.js           # API keys & site configuration
+│   ├── api.js              # Dev.to, CryptoPanic, CoinGecko, NewsAPI + mock data
+│   └── app.js              # Theme, routing, infinite scroll, search, save, share
+├── .github/
+│   └── workflows/
+│       └── deploy.yml      # GitHub Actions: auto-deploy to GitHub Pages
+├── sitemap.xml             # SEO sitemap
+├── robots.txt              # Search engine directives
+├── .nojekyll               # Required for GitHub Pages to serve all files
+└── ADSENSE_GUIDE.md        # AdSense setup instructions
 ```
 
 ## 🛠 Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 16 (App Router) |
-| Styling | Tailwind CSS v4 |
-| Language | TypeScript |
-| Icons | Lucide React |
-| Date Handling | date-fns |
-| HTTP | Native fetch with Next.js caching |
-
-## 🚢 Deployment
-
-### Vercel (recommended)
-
-```bash
-npm i -g vercel
-vercel
-```
-
-Set environment variables in the Vercel dashboard.
-
-### Self-hosted
-
-```bash
-npm run build
-npm start
-```
+| Hosting | GitHub Pages (free) |
+| CI/CD | GitHub Actions |
+| Frontend | HTML5, CSS3, Vanilla JavaScript (ES2020+) |
+| APIs | Dev.to, CryptoPanic, CoinGecko, NewsAPI.org |
+| Theme | CSS custom properties (dark/light) |
+| Storage | `localStorage` (theme + saved articles) |
+| Fonts | Inter (Google Fonts) |
 
 ## 📄 License
 
